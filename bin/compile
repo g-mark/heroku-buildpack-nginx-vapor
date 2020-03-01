@@ -20,6 +20,13 @@ else
 	echo '-----> nginx-buildpack: Custom mime.types found in app/config.'
 fi
 
+if [[ ! -f $1/config/vapor_proxy.conf.erb ]]; then
+	cp config/vapor_proxy.conf.erb "$1/config/"
+	echo '-----> nginx-buildpack: Default vapor proxy config copied to app/config.'
+else
+	echo '-----> nginx-buildpack: Custom vapor proxy config found in app/config.'
+fi
+
 if [[ ! -f $1/config/nginx.conf.erb ]]; then
 	cp config/nginx.conf.erb "$1/config/"
 	echo '-----> nginx-buildpack: Default config copied to app/config.'
