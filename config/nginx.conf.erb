@@ -48,6 +48,12 @@ http {
         #    return 301 https://$host$request_uri;
         #}
 
+        # custom error page (add a 404.html in your /Public directory)
+        #error_page 404 /404.html;
+        #location = /404.html {
+        #    internal;
+        #}
+
 
         # --- simple routing setup: try static files first, fall back to vapor app (including 404)
 
@@ -61,12 +67,6 @@ http {
         # --- more advanced routing setup:
         # --- set specific locations to proxy to the vapor app, fall back to static files (or 404 via ngnix)
         # --- use proxy rules in the vapor_proxy.conf.erb file
-
-        # custom error page (add a 404.html in your /Public directory)
-        #error_page 404 /404.html;
-        #location = /404.html {
-        #    internal;
-        #}
 
         # -- specific location samples
         # -- docs: https://nginx.org/en/docs/http/ngx_http_core_module.html#location
