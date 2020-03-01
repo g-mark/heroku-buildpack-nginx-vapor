@@ -4,6 +4,9 @@ psmgr=/tmp/nginx-buildpack-wait
 rm -f $psmgr
 mkfifo $psmgr
 
+# Evaluate the proxy config
+erb config/vapor_proxy.conf.erb > config/vapor_proxy.conf
+
 # Evaluate config to get $PORT
 erb config/nginx.conf.erb > config/nginx.conf
 

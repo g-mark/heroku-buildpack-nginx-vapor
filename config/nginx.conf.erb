@@ -3,43 +3,88 @@ daemon off;
 worker_processes <%= ENV['NGINX_WORKERS'] || 4 %>;
 
 events {
-	use epoll;
-	accept_mutex on;
-	worker_connections <%= ENV['NGINX_WORKER_CONNECTIONS'] || 1024 %>;
+    use epoll;
+    accept_mutex on;
+    worker_connections <%= ENV['NGINX_WORKER_CONNECTIONS'] || 1024 %>;
 }
 
 http {
-        gzip on;
-        gzip_comp_level 2;
-        gzip_min_length 512;
+    gzip on;
+    gzip_comp_level 2;
+    gzip_min_length 512;
 
-	server_tokens off;
+    server_tokens off;
 
-	log_format l2met 'measure#nginx.service=$request_time request_id=$http_x_request_id';
-	access_log <%= ENV['NGINX_ACCESS_LOG_PATH'] || 'logs/nginx/access.log' %> l2met;
-	error_log <%= ENV['NGINX_ERROR_LOG_PATH'] || 'logs/nginx/error.log' %>;
+    log_format l2met 'measure#nginx.service=$request_time request_id=$http_x_request_id';
+    access_log <%= ENV['NGINX_ACCESS_LOG_PATH'] || 'logs/nginx/access.log' %> l2met;
+    error_log <%= ENV['NGINX_ERROR_LOG_PATH'] || 'logs/nginx/error.log' %>;
 
-	include mime.types;
-	default_type application/octet-stream;
-	sendfile on;
+    include mime.types;
+    default_type application/octet-stream;
+    sendfile on;
 
-	#Must read the body in 5 seconds.
-	client_body_timeout 5;
+    #Must read the body in 5 seconds.
+    client_body_timeout 5;
 
-	upstream app_server {
-		server unix:/tmp/nginx.socket fail_timeout=0;
- 	}
+    upstream app_server {
+        server unix:/tmp/nginx.socket fail_timeout=0;
+    }
 
-	server {
-		listen <%= ENV["PORT"] %>;
-		server_name _;
-		keepalive_timeout 5;
+    server {
+        listen <%= ENV["PORT"] %>;
+        server_name _;
+        keepalive_timeout 5;
+        client_max_body_size <%= ENV['NGINX_CLIENT_MAX_BODY_SIZE'] || 1 %>M;
 
-		location / {
-			proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-			proxy_set_header Host $http_host;
-			proxy_redirect off;
-			proxy_pass http://app_server;
-		}
-	}
+
+        # ---- Vapor app Setup
+        # ---- Uncomment as appropriate
+
+        # Set the document root to the `Public` directory of the vapor app
+        root /app/Public;
+        
+        # Force http requests to be https
+        #if ($http_x_forwarded_proto != "https") {
+        #    return 301 https://$host$request_uri;
+        #}
+
+
+        # --- simple routing setup: try static files first, fall back to vapor app (including 404)
+
+        #try_files $uri @proxy;
+          
+        #location @proxy {
+        #    include vapor_proxy.conf;
+        #}
+
+
+        # --- more advanced routing setup:
+        # --- set specific locations to proxy to the vapor app, fall back to static files (or 404 via ngnix)
+        # --- use proxy rules in the vapor_proxy.conf.erb file
+
+        # custom error page (add a 404.html in your /Public directory)
+        #error_page 404 /404.html;
+        #location = /404.html {
+        #    internal;
+        #}
+
+        # -- specific location samples
+        # -- docs: https://nginx.org/en/docs/http/ngx_http_core_module.html#location
+
+        # custom exact location (`/` - home)
+        location = / {
+            include vapor_proxy.conf;
+        }
+
+        # custom exact location (`/login` - login)
+        #location = /login {
+        #    include vapor_proxy.conf;
+        #}
+
+        # custom prefix location (`/api/*` - all api routes)
+        #location /api/ {
+        #    include vapor_proxy.conf;
+        #}
+
+    }
 }
